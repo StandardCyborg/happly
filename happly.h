@@ -121,7 +121,7 @@ public:
    *
    * @param stream Stream to read from.
    */
-  virtual void readNext(std::ifstream& stream) = 0;
+  virtual void readNext(std::istream& stream) = 0;
 
   /**
    * @brief (reading) Write a header entry for this property.
@@ -221,7 +221,7 @@ public:
    *
    * @param stream Stream to read from.
    */
-  virtual void readNext(std::ifstream& stream) override {
+  virtual void readNext(std::istream& stream) override {
     data.emplace_back();
     stream.read((char*)&data.back(), sizeof(T));
   }
@@ -376,7 +376,7 @@ public:
    *
    * @param stream Stream to read from.
    */
-  virtual void readNext(std::ifstream& stream) override {
+  virtual void readNext(std::istream& stream) override {
 
     // Read the size of the list
     size_t count = 0;
@@ -1051,38 +1051,55 @@ public:
   /**
    * @brief Initialize a PLYData by reading from a file. Throws if any failures occur.
    *
-   * @param filename The file to read from.
+   * @param input Input
+   * @param isFilename If true, `input` is a filenae. Otherwise, its a string that is the contents of some .ply file.
    * @param verbose If true, print useful info about the file to stdout
    */
-  PLYData(const std::string& filename, bool verbose = false) {
+  PLYData(const std::string& input, bool isInputFilename, bool verbose = false) {
 
     using std::cout;
     using std::endl;
     using std::string;
     using std::vector;
 
-    if (verbose) cout << "PLY parser: Reading ply file: " << filename << endl;
-
-    // Open a file in binary always, in case it turns out to have binary data.
-    std::ifstream inStream(filename, std::ios::binary);
-    if (inStream.fail()) {
-      throw std::runtime_error("PLY parser: Could not open file " + filename);
+    if (verbose) {
+        if(isInputFilename){
+            cout << "PLY parser: Reading ply file: " << input << endl;
+        }
     }
 
+    std::unique_ptr<std::istream> inStream;
+    // Open a file in binary always, in case it turns out to have binary data.
+    if(isInputFilename)
+    {
+        std::ifstream* infstream = new std::ifstream(input, std::ios::binary);
+        if (infstream->fail()) {
+            throw std::runtime_error("PLY parser: Could not open file " + isInputFilename);
+        }
+        inStream.reset(infstream);
+    } else {
+        std::istringstream* istringstream = new std::istringstream(input);
 
+        inStream.reset(istringstream);
+    }
+      
     // == Process the header
-    parseHeader(inStream, verbose);
+    parseHeader(*inStream, verbose);
 
 
     // === Parse data from a binary file
     if (inputDataFormat == DataFormat::Binary) {
-      parseBinary(inStream, verbose);
+        
+      if (!isInputFilename) {
+         throw std::runtime_error("isInputFilename == false is not yet supported for binary files");
+      }
+        
+      parseBinary(*inStream, verbose);
     }
     // === Parse data from an ASCII file
     else if (inputDataFormat == DataFormat::ASCII) {
-      parseASCII(inStream, verbose);
+      parseASCII(*inStream, verbose);
     }
-
 
     if (verbose) {
       cout << "  - Finished parsing file." << endl;
@@ -1413,7 +1430,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseHeader(std::ifstream& inStream, bool verbose) {
+  void parseHeader(std::istream& inStream, bool verbose) {
 
     using std::cout;
     using std::endl;
@@ -1532,7 +1549,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseASCII(std::ifstream& inStream, bool verbose) {
+  void parseASCII(std::istream& inStream, bool verbose) {
 
     using std::string;
     using std::vector;
@@ -1567,7 +1584,7 @@ private:
    * @param inStream
    * @param verbose
    */
-  void parseBinary(std::ifstream& inStream, bool verbose) {
+  void parseBinary(std::istream& inStream, bool verbose) {
 
     using std::string;
     using std::vector;
