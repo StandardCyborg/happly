@@ -1052,7 +1052,7 @@ public:
    * @brief Initialize a PLYData by reading from a file. Throws if any failures occur.
    *
    * @param input Input
-   * @param isFilename If true, `input` is a filenae. Otherwise, its a string that is the contents of some .ply file.
+   * @param isFilename If true, `input` is a filename. Otherwise, its a string that is the contents of some .ply file.
    * @param verbose If true, print useful info about the file to stdout
    */
   PLYData(const std::string& input, bool isInputFilename, bool verbose = false) {
@@ -1074,7 +1074,7 @@ public:
     {
         std::ifstream* infstream = new std::ifstream(input, std::ios::binary);
         if (infstream->fail()) {
-            throw std::runtime_error("PLY parser: Could not open file " + isInputFilename);
+            throw std::runtime_error("PLY parser: Could not open file " + input);
         }
         inStream.reset(infstream);
     } else {
